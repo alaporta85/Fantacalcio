@@ -130,14 +130,20 @@ def buste_results():
 
 	for i in range(1, 6):
 
+		# Assign players until all players in the i-th slot are assigned
 		while True:
 
+			# Select all i-th offers
 			offers = [(nm, buste[nm].acquisti[i], buste[nm].dt) for nm in
 			          budgets if buste[nm].acquisti[i]]
 
 			if not offers:
 				break
 
+			# Sort them by datetime and value of the offer. This means that it
+			# will be always selected the most expensive player. In case of 2
+			# or more offers with the same value, player will be assigned to
+			# who sent the email first
 			offers.sort(key=lambda x: x[2])
 			offers.sort(key=lambda x: x[1][1], reverse=True)
 
@@ -145,18 +151,34 @@ def buste_results():
 			player, price = offer
 			players_to_sell = buste[team].cessioni[i]
 
+			# To correctly assign a player, we need to check that the players
+			# used to pay (if any) have not been sold in previous offers and
+			# that the budget is enough to cover the price
 			if (players_are_available(team, players_to_sell) and
 			   type(budget_is_ok(team, players_to_sell, price)) != bool):
 
+				# Update budget of the fantateam who acquired the player
 				budgets[team] = (budget_is_ok(
 						team, players_to_sell, price) - price)
+
+				# Set its i-th entry to be False
 				buste[team].acquisti[i] = False
+
+				# Update results
 				results[team].append('{}, {}'.format(player, price))
+
+				# Update the offers of the remaining fantateams. Basically we
+				# delete the offers relative to this player and shift all the
+				# rest up
 				offer_is_lost(i, player,
 				              all_teams=[i for i in budgets if i != team])
 			else:
+
+				# In case the fantateam is not able to pay the player, we
+				# update its offers and shit them up
 				offer_is_lost(i, player, all_teams=[team])
 
+	# Append empty strings for nice printing
 	for i in results:
 		while len(results[i]) < 5:
 			results[i].append('')
